@@ -9,6 +9,7 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 $query = 'SELECT * FROM message ORDER BY date_post DESC';
 $stmt = $pdo->query($query);
 $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
 ?>
 
 <!DOCTYPE html>
@@ -20,6 +21,14 @@ $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
 </head>
 <body>
     <h1>Bienvenue sur mon Blog</h1>
+    
+    <?php if (isset($_SESSION['pseudo'])): ?>
+        <p>Bienvenue, <?= htmlspecialchars($_SESSION['pseudo']); ?> !</p>
+        <a href="logout.php">Déconnexion</a>
+    <?php else: ?>
+        <a href="login.php">Connexion</a> | <a href="test_connexion.php">Connexion test</a> | <a href="inscription.php">Inscription</a>
+    <?php endif; ?>
+
     
     <?php foreach ($messages as $message): ?>
         <div>
