@@ -1,21 +1,40 @@
 <?php
+// Démarrage de la session (utile plus tard pour garder l'utilisateur connecté)
+session_start();
+
+$message = '';  // Variable pour stocker les messages à afficher
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Récupérer les données du formulaire
-    $pseudo = $_POST['pseudo'];
-    $email = $_POST['email'];
-    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);  // Hacher le mot de passe avant de l'enregistrer
+    $pseudo = trim($_POST['pseudo']);
+    $email = trim($_POST['email']);
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
 
-    // Connexion à la base de données
-    $pdo = new PDO('mysql:host=localhost;dbname=blog;charset=utf8', 'root', '');
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    try {
+        // Connexion à la base de données
+        $pdo = new PDO('mysql:host=localhost;dbname=blog;charset=utf8', 'root', '');
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // Insertion de l'utilisateur dans la base de données
-    $query = 'INSERT INTO user (pseudo, email, password) VALUES (?, ?, ?)';
-    $stmt = $pdo->prepare($query);
-    $stmt->execute([$pseudo, $email, $password]);
+        // Vérifier si l'email ou le pseudo existe déjà
+        $checkQuery = 'SELECT id FROM user WHERE email = ? OR pseudo = ?';
+        $checkStmt = $pdo->prepare($checkQuery);
+        $checkStmt->execute([$email, $pseudo]);
+        $existingUser = $checkStmt->fetch();
 
-    // Redirection après inscription
-    echo "Inscription réussie! <a href='login.php'>Connectez-vous</a>";
+        if ($existingUser) {
+            $message = "❌ Ce pseudo ou cet email est déjà utilisé.";
+        } else {
+            // Insertion de l'utilisateur dans la base de données
+            $query = 'INSERT INTO user (pseudo, email, password) VALUES (?, ?, ?)';
+            $stmt = $pdo->prepare($query);
+            $stmt->execute([$pseudo, $email, $password]);
+
+            // Redirection après inscription réussie
+            $message = "✅ Inscription réussie! <a href='login.php'>Connectez-vous</a>";
+        }
+    } catch (PDOException $e) {
+        $message = "⚠️ Erreur : " . $e->getMessage();
+    }
 }
 ?>
 
@@ -28,6 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <h1>Inscription</h1>
+
+    <!-- Affiche le message d'erreur ou de succès -->
+    <?php if ($message): ?>
+        <p style="color: <?= strpos($message, '✅') !== false ? 'green' : 'red'; ?>;">
+            <?= $message; ?>
+        </p>
+    <?php endif; ?>
+
     <form method="POST">
         <label for="pseudo">Pseudo :</label>
         <input type="text" name="pseudo" required>
